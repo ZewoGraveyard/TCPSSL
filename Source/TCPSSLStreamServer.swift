@@ -25,7 +25,7 @@
 @_exported import TCP
 @_exported import OpenSSL
 
-public struct TCPSSLStreamServer: StreamServerType {
+public struct TCPSSLStreamServer: StreamServer {
     public let serverSocket: TCPServerSocket
     public let lowWaterMark: Int
     public let highWaterMark: Int
@@ -43,7 +43,7 @@ public struct TCPSSLStreamServer: StreamServerType {
         )
     }
 
-    public func accept() throws -> StreamType {
+    public func accept() throws -> Stream {
         let socket = try serverSocket.accept()
         let rawStream = TCPStream(socket: socket, lowWaterMark: lowWaterMark, highWaterMark: highWaterMark)
         return try SSLServerStream(context: context, rawStream: rawStream)

@@ -1,4 +1,4 @@
-// TCPSSLStreamServer.swift
+// TCPSSLServer.swift
 //
 // The MIT License (MIT)
 //
@@ -25,17 +25,12 @@
 @_exported import TCP
 @_exported import OpenSSL
 
-public struct TCPSSLStreamServer: StreamServer {
-    public let serverSocket: TCPServerSocket
-    public let lowWaterMark: Int
-    public let highWaterMark: Int
+public struct TCPSSLServer: Host {
+    public let server: TCPServer
     public let context: SSLServerContext
 
-    public init(address: String? = nil, port: Int, backlog: Int = 128, lowWaterMark: Int = 1, highWaterMark: Int = 4096, certificate: String, privateKey: String, certificateChain: String? = nil) throws {
-        let ip = try IP(localAddress: address, port: port)
-        self.serverSocket = try TCPServerSocket(ip: ip, backlog: backlog)
-        self.lowWaterMark = lowWaterMark
-        self.highWaterMark = highWaterMark
+    public init(at host: String = "0.0.0.0", on port: Int, queuing backlog: Int = 128, reusingPort reusePort: Bool = false, certificate: String, privateKey: String, certificateChain: String? = nil) throws {
+        self.server = try TCPServer(at: host, on: port, queuing: backlog, reusingPort: reusePort)
         self.context = try SSLServerContext(
             certificate: certificate,
             privateKey: privateKey,
@@ -43,9 +38,8 @@ public struct TCPSSLStreamServer: StreamServer {
         )
     }
 
-    public func accept() throws -> Stream {
-        let socket = try serverSocket.accept()
-        let rawStream = TCPStream(socket: socket, lowWaterMark: lowWaterMark, highWaterMark: highWaterMark)
-        return try SSLServerStream(context: context, rawStream: rawStream)
+    public func accept(timingOut deadline: Double) throws -> Stream {
+        let stream = try server.accept(timingOut: deadline)
+        return try SSLServerStream(context: context, rawStream: stream)
     }
 }

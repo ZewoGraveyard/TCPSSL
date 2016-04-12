@@ -1,4 +1,4 @@
-// TCPSSLStreamClient.swift
+// TCPSSLConnection.swift
 //
 // The MIT License (MIT)
 //
@@ -25,27 +25,42 @@
 @_exported import TCP
 @_exported import OpenSSL
 
-public struct TCPSSLStreamClient: StreamClient {
-    public let ip: IP
-    public let lowWaterMark: Int
-    public let highWaterMark: Int
-    public let context: SSLClientContext
+public struct TCPSSLConnection: Connection {
+    public let connection: TCPConnection
+    public let stream: SSLClientStream
 
-    public init(address: String, port: Int, lowWaterMark: Int = 1, highWaterMark: Int = 4096, verifyBundle: String? = nil, certificate: String? = nil, privateKey: String? = nil, certificateChain: String? = nil) throws {
-        self.ip = try IP(remoteAddress: address, port: port)
-        self.lowWaterMark = lowWaterMark
-        self.highWaterMark = highWaterMark
-        self.context = try SSLClientContext(
+    public init(to host: String, on port: Int, verifyBundle: String? = nil, certificate: String? = nil, privateKey: String? = nil, certificateChain: String? = nil) throws {
+        self.connection = try TCPConnection(to: host, on: port)
+        let context = try SSLClientContext(
             verifyBundle: verifyBundle,
             certificate: certificate,
             privateKey: privateKey,
             certificateChain: certificateChain
         )
+        self.stream = try SSLClientStream(context: context, rawStream: connection)
     }
 
-    public func connect() throws -> Stream {
-        let socket = try TCPClientSocket(ip: ip)
-        let rawStream = TCPStream(socket: socket, lowWaterMark: lowWaterMark, highWaterMark: highWaterMark)
-        return try SSLClientStream(context: context, rawStream: rawStream)
+    public func open(timingOut deadline: Double) throws {
+        try connection.open(timingOut: deadline)
+    }
+
+    public var closed: Bool {
+        return stream.closed
+    }
+
+    public func receive(upTo byteCount: Int, timingOut deadline: Double) throws -> Data {
+        return try stream.receive(upTo: byteCount, timingOut: deadline)
+    }
+
+    public func send(data: Data, timingOut deadline: Double) throws {
+        try stream.send(data, timingOut: deadline)
+    }
+
+    public func flush(timingOut deadline: Double) throws {
+        try stream.flush(timingOut: deadline)
+    }
+
+    public func close() -> Bool {
+        return stream.close()
     }
 }

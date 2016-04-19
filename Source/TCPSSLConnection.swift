@@ -29,8 +29,8 @@ public struct TCPSSLConnection: Connection {
     public let connection: TCPConnection
     public let stream: SSLClientStream
 
-    public init(to host: String, on port: Int, verifyBundle: String? = nil, certificate: String? = nil, privateKey: String? = nil, certificateChain: String? = nil) throws {
-        self.connection = try TCPConnection(to: host, on: port)
+    public init(host: String, port: Int, verifyBundle: String? = nil, certificate: String? = nil, privateKey: String? = nil, certificateChain: String? = nil) throws {
+        self.connection = try TCPConnection(host: host, port: port)
         let context = try SSLClientContext(
             verifyBundle: verifyBundle,
             certificate: certificate,
@@ -52,7 +52,7 @@ public struct TCPSSLConnection: Connection {
         return try stream.receive(upTo: byteCount, timingOut: deadline)
     }
 
-    public func send(data: Data, timingOut deadline: Double) throws {
+    public func send(_ data: Data, timingOut deadline: Double) throws {
         try stream.send(data, timingOut: deadline)
     }
 
@@ -60,7 +60,7 @@ public struct TCPSSLConnection: Connection {
         try stream.flush(timingOut: deadline)
     }
 
-    public func close() -> Bool {
-        return stream.close()
+    public func close() throws {
+        try stream.close()
     }
 }
